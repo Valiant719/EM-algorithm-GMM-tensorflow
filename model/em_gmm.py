@@ -28,6 +28,10 @@ class EM_GMM(object):
         self.lr = tf.train.exponential_decay(
             learning_rate, self.step, 10000, decay_rate, staircase=True, name="lr")
         
+        _ = tf.scalar_summary("learning rate", self.lr)
+        
+        self._attrs = ["use_GD","num_clusters","learning_rate", "decay_rate", "max_epochs"]
+       
         self.build_model()
       
     def build_model(self):
@@ -45,8 +49,14 @@ class EM_GMM(object):
             p.append(p2_k)
         sum_p = sum(p)
         self.NLL = -tf.reduce_sum(tf.log(sum_p))
+
+        _ = tf.scalar_summary("negative log likelihood", self.NLL)
+
         self.optim =  tf.train.AdamOptimizer(learning_rate=self.lr) \
                  .minimize(self.NLL, global_step=self.step,var_list=[self.mu,self.cov,self.prior])
+
+        for k in xrange(self.num_clusters):
+            _ = tf.histogram_summary("mu_"+str(k), tf.gather(self.mu,k))
     
     def E_step(self):
         """ E-step 
@@ -65,11 +75,9 @@ class EM_GMM(object):
             p1_k = dist.pdf(self.x)
             p2_k = tf.gather(self.prior,k) * p1_k
             p.append(p2_k)
-        sum_p = sum(p)
-        self.NLL = -tf.reduce_sum(tf.log(sum_p))
+        sum_p = sum(p)  
         self.resp = [i/sum_p for i in p]
-
-        
+       
     def M_step(self):
 
         """ M-step
@@ -96,26 +104,36 @@ class EM_GMM(object):
         new_cov = tf.pack(new_cov)
         new_prior = tf.pack(new_prior)
     
-        self.mu = new_mu
-        self.cov = new_cov
-        self.prior = new_prior
+        #self.mu = new_mu
+        #self.cov = new_cov
+        #self.prior = new_prior
+        self.sess.run([self.mu.assign(new_mu),self.cov.assign(new_cov),
+                       self.prior.assign(new_prior)],feed_dict={self.x:self.x_data})
+
         
     def train(self):
+        merged_sum = tf.merge_all_summaries()
+        writer = tf.train.SummaryWriter("./logs/%s" % self.get_model_dir(), self.sess.graph)
+        
         tf.initialize_all_variables().run()
         
         start_time = time.time()
         start_iter = self.step.eval()
         
+        feed_dict={self.x:self.x_data}
+        
         for step in xrange(start_iter, start_iter + self.max_epochs):
+            writer.add_summary(self.sess.run(merged_sum,feed_dict), step)
+            
             if step % 10 == 0:
                 self.plotGMM()
                 if self.use_GD:
-                    self.sess.run(self.optim,feed_dict={self.x:self.x_data})
+                    self.sess.run(self.optim,feed_dict)
                     self.sess.run(self.prior.assign(tf.squeeze(tf.nn.softmax(tf.expand_dims(self.prior,0)))))
                 else:
                     self.E_step()
                     self.M_step()
-                NLL = self.sess.run(self.NLL,feed_dict={self.x:self.x_data})
+                NLL = self.sess.run(self.NLL,feed_dict)
                 print("Step: [%4d/%4d] time: %4.4f, loss: %.8f" \
                     % (step, 100, time.time() - start_time, NLL))
 
@@ -135,6 +153,13 @@ class EM_GMM(object):
             mu = self.sess.run(self.mu,feed_dict={self.x:self.x_data})
             plt.plot(mu[i][0],mu[i][1],'+', markersize=13, mew=3)
         plt.show()
+        
+    def get_model_dir(self):
+        model_dir = ''
+        for attr in self._attrs:
+            if hasattr(self, attr):
+                model_dir += "/%s=%s" % (attr, getattr(self, attr))
+        return model_dir
     
 
 

@@ -41,6 +41,8 @@ Results
 ![result2](./assets/result2.png)
 ![result3](./assets/result3.png)
 ![result4](./assets/result4.png)
+![board1](./assets/board1.png)
+![board2](./assets/board2.png)
 
 Author
 ------

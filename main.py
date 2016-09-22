@@ -31,9 +31,7 @@ def generate_data(num_clusters, num_steps):
 
 def main(_):
     """generate data"""
-    num_clusters = 3
-    num_steps = 100
-    x_data = generate_data(3,100)
+    x_data = generate_data(FLAGS.num_clusters,100)
 
     tf.reset_default_graph()
 
