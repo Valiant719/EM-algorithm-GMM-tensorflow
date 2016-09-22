@@ -41,9 +41,9 @@ Results
 Training details of NVDM. The best result can be achieved by onehost updates, not alternative updates.
 
 ![result1](./assets/result1.png)
-![result2](./assets/result1.png)
-![result3](./assets/result1.png)
-![result4](./assets/result1.png)
+![result2](./assets/result2.png)
+![result3](./assets/result3.png)
+![result4](./assets/result4.png)
 
 Author
 ------
