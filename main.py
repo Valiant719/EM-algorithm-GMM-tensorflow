@@ -34,12 +34,8 @@ def main(_):
     x_data = generate_data(FLAGS.num_clusters,100)
 
     tf.reset_default_graph()
-
-    config = tf.ConfigProto(
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1),
-        device_count = {'GPU' : 4}
-    )
-    config.gpu_options.allocator_type = 'BFC'
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
 
