@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
+import os
 
 # to see in 2-dimension
 input_dim = 2
@@ -79,7 +79,6 @@ class EM_GMM(object):
         self.resp = [i/sum_p for i in p]
        
     def M_step(self):
-
         """ M-step
         Variable:
             N_k: (sigma over all samples) p(z_k|x)
@@ -136,6 +135,10 @@ class EM_GMM(object):
                 NLL = self.sess.run(self.NLL,feed_dict)
                 print("Step: [%4d/%4d] time: %4.4f, loss: %.8f" \
                     % (step, 100, time.time() - start_time, NLL))
+            
+                # save
+                self.save(step)
+
 
     def plotGMM(self):
         delta = 0.025
@@ -161,5 +164,35 @@ class EM_GMM(object):
                 model_dir += "/%s=%s" % (attr, getattr(self, attr))
         return model_dir
     
+    def save(self, global_step=None):
+        self.saver = tf.train.Saver()
+
+        print(" [*] Saving checkpoints...")
+        model_name = type(self).__name__
+        model_dir = self.get_model_dir()
+
+        checkpoint_dir = "checkpoint" + model_dir
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        self.saver.save(self.sess, 
+            os.path.join(checkpoint_dir, model_name), global_step=global_step)
+        
+    def load(self):
+        self.saver = tf.train.Saver()
+
+        print(" [*] Loading checkpoints...")
+        model_dir = self.get_model_dir()
+        checkpoint_dir = "checkpoint" + model_dir
+
+        ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+        if ckpt and ckpt.model_checkpoint_path:
+          ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+          self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
+          print(" [*] Load SUCCESS")
+          return True
+        else:
+          print(" [!] Load failed...")
+          return False
+
 
 

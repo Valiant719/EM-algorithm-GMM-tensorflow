@@ -13,6 +13,7 @@ flags.DEFINE_float("decay_rate", 0.96, "Decay rate of learning rate [0.96]")
 flags.DEFINE_integer("max_epochs", 100, "Maximum of Epochs [100]")
 flags.DEFINE_integer("num_clusters", 3, "The dimension of latent variable [3]")
 flags.DEFINE_boolean("use_GD", False, "False for EM-algorithm, True for gradient descent [False]")
+flags.DEFINE_boolean("forward_only", False, "False for training, True for testing [False]")
 FLAGS = flags.FLAGS
 
 def generate_data(num_clusters, num_steps):
@@ -38,11 +39,13 @@ def main(_):
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
-
-        EM = EM_GMM(sess,x_data, num_clusters=FLAGS.num_clusters,
+        model = EM_GMM(sess,x_data, num_clusters=FLAGS.num_clusters,
                    learning_rate=FLAGS.learning_rate,decay_rate=FLAGS.decay_rate,
                    max_epochs=FLAGS.max_epochs,use_GD=FLAGS.use_GD)
-        EM.train()
+        if FLAGS.forward_only:
+            model.load()
+        else:
+            model.train()
 
 if __name__ == '__main__':
     tf.app.run()
